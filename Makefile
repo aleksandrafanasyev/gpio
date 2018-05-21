@@ -2,7 +2,7 @@
 
 SHELL := /bin/sh
 CC = gcc
-C_FILES := gpio.c
+C_FILES := aagpio.c
 CFLAGS = -Wall -Werror
 LDFLAGS =
 target: DIR := target
@@ -10,17 +10,17 @@ host: DIR := host
 
 All: host
 
-target: gpio
+target: aagpio
 
-host: gpio
+host: aagpio
 
-gpio: $(C_FILES)
+aagpio: $(C_FILES)
 	mkdir $(DIR)
-	$(CROSS_COMPILE)$(CC) $(CFLAGS) $(C_FILES) $(LDFLAGS) -o $(DIR)/gpio
+	$(CROSS_COMPILE)$(CC) $(CFLAGS) $(C_FILES) $(LDFLAGS) -o $(DIR)/aagpio
 
 clean:
-	rm -f ./target/gpio
-	rm -f ./host/gpio
+	rm -f ./target/aagpio
+	rm -f ./host/aagpio
 	rm -f *.o
 	rm -rf ./target
 	rm -rf ./host
