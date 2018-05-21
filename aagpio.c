@@ -61,7 +61,7 @@ int main(int argc,char *  argv[])
 	char filename[PATH_MAX];
 	char but_val;
 	//opensyslog
-	openlog("GPIO", LOG_PID|LOG_PERROR, LOG_USER);
+	openlog("aagpio", LOG_PID, LOG_DAEMON);
 	// get GPIO number
 	if (argc != 3){
 		syslog(LOG_ERR,"Need gpio numbers. Usage: gpio led_gpio_number button_gpio_number");
@@ -80,17 +80,38 @@ int main(int argc,char *  argv[])
 		closelog();
 		exit(EXIT_FAILURE);
 	}
-	
-	//set new handler for SIGTERM and SIGINT                                                              
-	struct sigaction act;                                                                                 
-	sigemptyset(&act.sa_mask);                                                                            
-	act.sa_handler = &sig_handl;                                                                          
-	act.sa_flags = 0;                                                                                     
-	if (sigaction(SIGTERM, &act, NULL) == -1){                                                             
+	//Daemonize server
+	pid_t d_pid;
+	d_pid = fork();
+	switch(d_pid){
+	case -1:
+		  errExit("fork");
+	case 0:
+		  break;
+	default:
+		  printf("aagpio daemon pid=%d\n",d_pid);
+		  exit(EXIT_SUCCESS);
+	}
+		
+	if (setsid() == -1)
+		  errExit("setsid");
+	//close STDIN STDOUT STDERR
+	int i;
+	for (i = 0; i < 3; i++){
+		if (close(i) == -1)
+			errExit("close");
+	}
+
+	//set new handler for SIGTERM and SIGINT                               
+	struct sigaction act;                                      
+	sigemptyset(&act.sa_mask);                                         
+	act.sa_handler = &sig_handl;                                        
+	act.sa_flags = 0;                                                  
+	if (sigaction(SIGTERM, &act, NULL) == -1){                            
 		syslog(LOG_ERR,"sigaction");
 		exit(EXIT_FAILURE);
 	}		
-	if (sigaction(SIGINT, &act, NULL) == -1){                                                              
+	if (sigaction(SIGINT, &act, NULL) == -1){                        
 		syslog(LOG_ERR,"sigaction");
 		exit(EXIT_FAILURE);
 	}
@@ -195,9 +216,6 @@ int main(int argc,char *  argv[])
 
 	//main cycle
 	while(term_flag == 0){
-
-printf("Kyyyyyy\n");
-		
 		//waiting cick for button 
 		if (poll(pollfd, 1, -1) == -1){
 			if (term_flag == 1){
@@ -206,8 +224,6 @@ printf("Kyyyyyy\n");
 				errExit("poll");
 			}
 		}
-printf("Kuuuuuu\n");
-		
 		// handle the event
 		if (lseek(but_des, 0, SEEK_SET) == -1)
 			errExit("lseek file value for button");
